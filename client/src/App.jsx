@@ -227,6 +227,29 @@ function effectPresetValues(name) {
   return EFFECT_PRESETS[key] || EFFECT_PRESETS.none;
 }
 
+const EFFECT_PRESET_NOTES = {
+  none: 'No color changes (original look).',
+  cinematic: 'Higher contrast + subtle sharpen. Great for a clean "pro" look.',
+  vintage: 'Film-like look with vignette + grain.',
+  bw: 'Black & white (saturation = 0).',
+  punchy: 'Strong contrast + high saturation (sports / dance).',
+  dreamy: 'Soft + brighter look (romantic / chill).',
+  custom: 'Custom settings (you tweaked the sliders).',
+};
+
+function effectPresetNote(name) {
+  const key = typeof name === 'string' ? name.trim() : '';
+  return EFFECT_PRESET_NOTES[key] || '';
+}
+
+const TRANSITION_QUICK_PICKS = [
+  { label: 'Smooth', value: 'fade' },
+  { label: 'Fast', value: 'fadefast' },
+  { label: 'Film', value: 'dissolve' },
+  { label: 'Zoom', value: 'zoomin' },
+  { label: 'Surprise', value: 'random_fancy' },
+];
+
 export default function App() {
   const [title, setTitle] = useState('BeatSync Edit');
   const [audioFile, setAudioFile] = useState(null);
@@ -247,6 +270,44 @@ export default function App() {
   const [noise, setNoise] = useState(0);
   const [sharpen, setSharpen] = useState(0);
   const [curves, setCurves] = useState('none');
+
+  function applyEffectsPreset(next) {
+    const v = effectPresetValues(next);
+    setEffectsPreset(next);
+    setBrightness(v.brightness);
+    setContrast(v.contrast);
+    setSaturation(v.saturation);
+    setHue(v.hue);
+    setVignette(Boolean(v.vignette));
+    setNoise(v.noise);
+    setSharpen(v.sharpen);
+    setCurves(v.curves);
+  }
+
+  function markEffectsCustom() {
+    setEffectsPreset((p) => (p === 'custom' ? p : 'custom'));
+  }
+
+  function setEffectNumber(setter) {
+    return (e) => {
+      setter(Number(e.target.value));
+      markEffectsCustom();
+    };
+  }
+
+  function setEffectBool(setter) {
+    return (e) => {
+      setter(Boolean(e.target.checked));
+      markEffectsCustom();
+    };
+  }
+
+  function setEffectString(setter) {
+    return (e) => {
+      setter(String(e.target.value));
+      markEffectsCustom();
+    };
+  }
 
   const [project, setProject] = useState(null);
   const [render, setRender] = useState(null);
@@ -555,6 +616,24 @@ export default function App() {
                   <option value="revealdown">Reveal down</option>
                 </select>
                 <div className="text-xs text-slate-400">{transitionNote(transition)}</div>
+                <div className="mt-1 flex flex-wrap gap-2">
+                  {TRANSITION_QUICK_PICKS.map((t) => (
+                    <button
+                      key={t.value}
+                      type="button"
+                      onClick={() => setTransition(t.value)}
+                      className={classNames(
+                        'rounded-lg border border-white/10 bg-black/30 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-black/40',
+                        transition === t.value ? 'border-indigo-400/40 bg-indigo-600/60 text-white' : ''
+                      )}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="text-xs text-slate-500">
+                  Tip: Fade is the smoothest. Random (fancy) picks a different transition on every cut.
+                </div>
               </label>
 
               <div className="grid gap-2">
@@ -568,6 +647,76 @@ export default function App() {
             <div className="mt-6 rounded-xl border border-white/10 bg-black/20 p-4">
               <div className="text-sm text-slate-300">Effects</div>
 
+              <div className="mt-1 text-xs text-slate-500">Applies to the whole video.</div>
+
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => applyEffectsPreset('cinematic')}
+                  className={classNames(
+                    'rounded-lg border border-white/10 bg-black/30 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-black/40',
+                    effectsPreset === 'cinematic' ? 'border-indigo-400/40 bg-indigo-600/60 text-white' : ''
+                  )}
+                >
+                  Cinematic
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyEffectsPreset('vintage')}
+                  className={classNames(
+                    'rounded-lg border border-white/10 bg-black/30 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-black/40',
+                    effectsPreset === 'vintage' ? 'border-indigo-400/40 bg-indigo-600/60 text-white' : ''
+                  )}
+                >
+                  Vintage
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyEffectsPreset('bw')}
+                  className={classNames(
+                    'rounded-lg border border-white/10 bg-black/30 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-black/40',
+                    effectsPreset === 'bw' ? 'border-indigo-400/40 bg-indigo-600/60 text-white' : ''
+                  )}
+                >
+                  B&W
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyEffectsPreset('punchy')}
+                  className={classNames(
+                    'rounded-lg border border-white/10 bg-black/30 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-black/40',
+                    effectsPreset === 'punchy' ? 'border-indigo-400/40 bg-indigo-600/60 text-white' : ''
+                  )}
+                >
+                  Punchy
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyEffectsPreset('dreamy')}
+                  className={classNames(
+                    'rounded-lg border border-white/10 bg-black/30 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-black/40',
+                    effectsPreset === 'dreamy' ? 'border-indigo-400/40 bg-indigo-600/60 text-white' : ''
+                  )}
+                >
+                  Dreamy
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyEffectsPreset('none')}
+                  className={classNames(
+                    'rounded-lg border border-white/10 bg-black/30 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-black/40',
+                    effectsPreset === 'none' ? 'border-indigo-400/40 bg-indigo-600/60 text-white' : ''
+                  )}
+                >
+                  Reset
+                </button>
+              </div>
+
+              <div className="mt-2 text-xs text-slate-400">
+                Tip: Start with a preset, then tweak sliders. Tweaks switch preset to{' '}
+                <span className="text-slate-200">Custom</span>.
+              </div>
+
               <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <label className="grid gap-2 sm:col-span-2">
                   <div className="text-sm text-slate-300">Preset</div>
@@ -575,19 +724,15 @@ export default function App() {
                     value={effectsPreset}
                     onChange={(e) => {
                       const next = String(e.target.value);
-                      const v = effectPresetValues(next);
-                      setEffectsPreset(next);
-                      setBrightness(v.brightness);
-                      setContrast(v.contrast);
-                      setSaturation(v.saturation);
-                      setHue(v.hue);
-                      setVignette(Boolean(v.vignette));
-                      setNoise(v.noise);
-                      setSharpen(v.sharpen);
-                      setCurves(v.curves);
+                      if (next === 'custom') {
+                        setEffectsPreset('custom');
+                        return;
+                      }
+                      applyEffectsPreset(next);
                     }}
                     className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500"
                   >
+                    <option value="custom">Custom</option>
                     <option value="none">None</option>
                     <option value="cinematic">Cinematic</option>
                     <option value="vintage">Vintage</option>
@@ -595,6 +740,24 @@ export default function App() {
                     <option value="punchy">Punchy</option>
                     <option value="dreamy">Dreamy</option>
                   </select>
+                  <div className="text-xs text-slate-400">{effectPresetNote(effectsPreset)}</div>
+                </label>
+
+                <label className="grid gap-2 sm:col-span-2">
+                  <div className="text-sm text-slate-300">Tone curve</div>
+                  <select
+                    value={curves}
+                    onChange={setEffectString(setCurves)}
+                    className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="none">None</option>
+                    <option value="lighter">Lighter</option>
+                    <option value="medium_contrast">Medium contrast</option>
+                    <option value="strong_contrast">Strong contrast</option>
+                    <option value="vintage">Vintage</option>
+                    <option value="cross_process">Cross process</option>
+                  </select>
+                  <div className="text-xs text-slate-500">Tip: Curves can change the feel more than brightness/contrast.</div>
                 </label>
 
                 <label className="grid gap-2">
@@ -608,7 +771,7 @@ export default function App() {
                     max={0.3}
                     step={0.01}
                     value={brightness}
-                    onChange={(e) => setBrightness(Number(e.target.value))}
+                    onChange={setEffectNumber(setBrightness)}
                     className="w-full accent-indigo-500"
                   />
                 </label>
@@ -624,7 +787,7 @@ export default function App() {
                     max={2}
                     step={0.01}
                     value={contrast}
-                    onChange={(e) => setContrast(Number(e.target.value))}
+                    onChange={setEffectNumber(setContrast)}
                     className="w-full accent-indigo-500"
                   />
                 </label>
@@ -640,7 +803,7 @@ export default function App() {
                     max={2.5}
                     step={0.01}
                     value={saturation}
-                    onChange={(e) => setSaturation(Number(e.target.value))}
+                    onChange={setEffectNumber(setSaturation)}
                     className="w-full accent-indigo-500"
                   />
                 </label>
@@ -656,7 +819,7 @@ export default function App() {
                     max={180}
                     step={1}
                     value={hue}
-                    onChange={(e) => setHue(Number(e.target.value))}
+                    onChange={setEffectNumber(setHue)}
                     className="w-full accent-indigo-500"
                   />
                 </label>
@@ -668,7 +831,7 @@ export default function App() {
                     <input
                       type="checkbox"
                       checked={vignette}
-                      onChange={(e) => setVignette(Boolean(e.target.checked))}
+                      onChange={setEffectBool(setVignette)}
                       className="h-4 w-4 accent-indigo-500"
                     />
                   </div>
@@ -685,7 +848,7 @@ export default function App() {
                     max={30}
                     step={1}
                     value={noise}
-                    onChange={(e) => setNoise(Number(e.target.value))}
+                    onChange={setEffectNumber(setNoise)}
                     className="w-full accent-indigo-500"
                   />
                 </label>
@@ -701,7 +864,7 @@ export default function App() {
                     max={2}
                     step={0.05}
                     value={sharpen}
-                    onChange={(e) => setSharpen(Number(e.target.value))}
+                    onChange={setEffectNumber(setSharpen)}
                     className="w-full accent-indigo-500"
                   />
                 </label>
