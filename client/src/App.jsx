@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import MusicTempo from 'music-tempo';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+console.log('Using API_BASE:', API_BASE);
 
 async function apiJson(path, options) {
   const res = await fetch(`${API_BASE}${path}`, {
