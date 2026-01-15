@@ -1,5 +1,6 @@
 const { spawn } = require('child_process');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 
 const Project = require('../models/Project');
@@ -259,6 +260,30 @@ function computeTransitionDurations(displayDurations, maxDur) {
   return out;
 }
 
+function concatQuotedPath(p) {
+  const s = String(p);
+  return `'${s.replace(/'/g, "\\'")}'`;
+}
+
+function buildConcatListFileContents(items) {
+  const lines = ['ffconcat version 1.0'];
+
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i];
+    lines.push(`file ${concatQuotedPath(it.path)}`);
+
+    const d = Number(it.len);
+    lines.push(`duration ${Number.isFinite(d) ? toFixed3(d) : '1.000'}`);
+  }
+
+  if (items.length > 0) {
+    const last = items[items.length - 1];
+    lines.push(`file ${concatQuotedPath(last.path)}`);
+  }
+
+  return `${lines.join('\n')}\n`;
+}
+
 function spawnFfmpeg(args) {
   return new Promise((resolve, reject) => {
     const bin = process.env.FFMPEG_PATH || 'ffmpeg';
@@ -335,6 +360,51 @@ async function renderVideo(renderDoc) {
 
   const outputPath = path.join(rendersDir(), `${renderDoc._id}.mp4`);
   if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
+
+  const totalMem = Number(os.totalmem());
+  const isSmallMemInstance = Number.isFinite(totalMem) ? totalMem < 1024 * 1024 * 1024 : false;
+
+  const useLowMemConcat = parseBool(process.env.LOW_MEM_RENDER) || isSmallMemInstance || segments > 30;
+  if (useLowMemConcat) {
+    const concatItems = [];
+    for (let i = 0; i < segments; i++) {
+      const img = project.images[i % project.images.length];
+      concatItems.push({ path: img.path, len: displayDurations[i] });
+    }
+
+    const listPath = path.join(rendersDir(), `${renderDoc._id}.ffconcat`);
+    fs.writeFileSync(listPath, buildConcatListFileContents(concatItems));
+
+    const filter = [
+      `scale=${width}:${height}:force_original_aspect_ratio=decrease`,
+      `pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2`,
+      `fps=${fps}`,
+      effectsChain,
+      'format=yuv420p',
+      'setsar=1',
+    ]
+      .filter(Boolean)
+      .join(',');
+
+    const args = ['-y'];
+    args.push('-f', 'concat', '-safe', '0', '-i', listPath);
+    args.push('-i', project.audio.path);
+    args.push('-vf', filter);
+    args.push('-map', '0:v:0');
+    args.push('-map', '1:a:0');
+    args.push('-c:v', 'libx264');
+    args.push('-preset', 'veryfast');
+    args.push('-crf', '18');
+    args.push('-c:a', 'aac');
+    args.push('-b:a', '192k');
+    args.push('-pix_fmt', 'yuv420p');
+    args.push('-movflags', '+faststart');
+    args.push('-shortest');
+    args.push(outputPath);
+
+    await spawnFfmpeg(args);
+    return outputPath;
+  }
 
   const args = ['-y'];
 

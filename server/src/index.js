@@ -19,7 +19,8 @@ async function start() {
 
   const app = express();
 
-  app.use(cors({ origin: true, credentials: true }));
+  app.use(cors());
+  app.options('*', cors());
   app.use(express.json({ limit: '10mb' }));
   app.use(morgan('dev'));
 
