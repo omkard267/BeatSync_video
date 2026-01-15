@@ -1,10 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import MusicTempo from 'music-tempo';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+const API_BASE = String(import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000')
+  .trim()
+  .replace(/\/+$/, '');
 
 async function apiJson(path, options) {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const normalizedPath = String(path || '').startsWith('/') ? String(path || '') : `/${String(path || '')}`;
+  const res = await fetch(`${API_BASE}${normalizedPath}`, {
     headers: {
       ...(options?.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
       ...(options?.headers || {}),
