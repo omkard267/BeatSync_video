@@ -374,7 +374,10 @@ async function renderVideo(renderDoc) {
     parts.push(`[x${segments - 1}]${tail}`);
   }
 
-  const filterComplex = parts.map((p) => `${p};`).join('');
+  const filterComplex = parts
+    .map((p) => String(p).trim())
+    .filter(Boolean)
+    .join(';');
 
   args.push('-filter_complex', filterComplex);
   args.push('-map', '[vout]');
