@@ -2,7 +2,11 @@ const express = require('express');
 const mime = require('mime-types');
 const multer = require('multer');
 const path = require('path');
-const { nanoid } = require('nanoid');
+const crypto = require('crypto');
+
+function nanoid(size = 21) {
+  return crypto.randomBytes(size).toString('base64url').slice(0, size);
+}
 
 const Project = require('../models/Project');
 const {
