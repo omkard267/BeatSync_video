@@ -7,12 +7,18 @@ const API_BASE = String(import.meta.env.VITE_API_BASE_URL || 'http://localhost:5
 
 async function apiJson(path, options) {
   const normalizedPath = String(path || '').startsWith('/') ? String(path || '') : `/${String(path || '')}`;
+  const method = String(options?.method || 'GET').toUpperCase();
+  const hasJsonBody = options?.body !== undefined && !(options?.body instanceof FormData);
+  const shouldSetJsonContentType = hasJsonBody && method !== 'GET' && method !== 'HEAD';
+
+  const headers = {
+    ...(shouldSetJsonContentType ? { 'Content-Type': 'application/json' } : {}),
+    ...(options?.headers || {}),
+  };
+
   const res = await fetch(`${API_BASE}${normalizedPath}`, {
-    headers: {
-      ...(options?.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
-      ...(options?.headers || {}),
-    },
     ...options,
+    headers,
   });
 
   const contentType = res.headers.get('content-type') || '';
